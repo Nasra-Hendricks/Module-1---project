@@ -1,281 +1,197 @@
 <template>
-    <div>
-        <h1>Payroll System</h1>
-        <!-- Payroll Information Table  -->
-        <table border="1" cellspacing="0" cellpadding="5">
-        <thead>
-        <tr>
-            <th>Employee ID</th>
-            <th>Hours Worked</th>
-            <th>Leave Deductions</th>
-            <th>Final Salary</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="employee in payrollData" :key="employee.employedId">
-            <td>{{ employee.employeeId }}</td>
-            <td>{{ employee.hoursWorked }}</td>
-            <td>{{ employee.leaveDeductions }}</td>
-            <td>{{ employee.finalSalary }}</td>
-            <td>
-            <button @click="generatePayslip(employee)">Generate Payslip</button>
-            </td>
-        </tr>
-    </tbody>
- </table>
- <!-- Payslip Modal -->
- <div v-if="selectedEmployee" class="payslip-modal">
-    <h2>Payslip for Employee {{ selectedEmployee.employeeId }}</h2>
-    <p><b>Hours Worked:</b>{{ selectedEmployee.hoursWorked }}</p>
-    <p><b>Leave Deductions:</b>{{ selectedEmployee.leaveDeductions }}</p>
-    <p><b>Final Salary:</b>{{ selectedEmployee.finalSalary }}</p>
-    <button @click="downloadPayslip">Download Payslip</button>
-    <button @click="closePayslip">Close</button>
- </div>
+  <div class="container mt-4">
+    <h2 class="text-center mb-4">Payroll System</h2>
+
+    <!-- Loading Indicator -->
+    <div v-if="loading" class="text-center">Loading Payroll Data...</div>
+
+    <!-- Error Message -->
+    <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
+
+    <!-- Payroll Information Cards -->
+    <div class="row">
+      <div v-for="employee in payrollData" :key="employee.employee_id" class="col-12 col-md-6 col-lg-4 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h5>Employee ID: {{ employee.employee_id }}</h5>
+          </div>
+          <div class="card-body">
+            <p><strong>Hours Worked:</strong> {{ employee.hours_worked }}</p>
+            <p><strong>Leave Deductions:</strong> {{ employee.leave_deductions }}</p>
+            <p><strong>Final Salary:</strong> ${{ employee.final_salary }}</p>
+            <button type="button" class="btn btn-primary btn-sm mt-2" @click="generatePayslip(employee)">
+              Generate Payslip
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Payslip Modal -->
+    <div v-if="selectedEmployee" class="modal fade show" style="display: block;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Payslip for Employee {{ selectedEmployee.employee_id }}</h5>
+            <button type="button" class="close" @click="closePayslip">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Hours Worked:</strong> {{ selectedEmployee.hours_worked }}</p>
+            <p><strong>Leave Deductions:</strong> {{ selectedEmployee.leave_deductions }}</p>
+            <p><strong>Final Salary:</strong> ${{ selectedEmployee.final_salary }}</p>
+            <button type="button" class="btn btn-success btn-sm" @click="downloadPayslip">Download Payslip</button>
+            <button type="button" class="btn btn-secondary btn-sm" @click="closePayslip">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
+
 <script>
-import {jsPDF} from "jspdf";
+import axios from 'axios';
+import { jsPDF } from 'jspdf';
+
 export default {
-    data() {
-        return {
-    "payrollData": [
-        {
-            "employeeId": 1,
-            "hoursWorked": 160,
-            "leaveDeductions": 8,
-            "finalSalary": 69500
-        },
-        {
-            "employeeId": 2,
-            "hoursWorked": 150,
-            "leaveDeductions": 10,
-            "finalSalary": 79000
-        },
-        {
-            "employeeId": 3,
-            "hoursWorked": 170,
-            "leaveDeductions": 4,
-            "finalSalary": 54800
-        },
-        {
-            "employeeId": 4,
-            "hoursWorked": 165,
-            "leaveDeductions": 6,
-            "finalSalary": 59700
-        },
-        {
-            "employeeId": 5,
-            "hoursWorked": 158,
-            "leaveDeductions": 5,
-            "finalSalary": 57850
-        },
-        {
-            "employeeId": 6,
-            "hoursWorked": 168,
-            "leaveDeductions": 2,
-            "finalSalary": 64800
-        },
-        {
-            "employeeId": 7,
-            "hoursWorked": 175,
-            "leaveDeductions": 3,
-            "finalSalary": 71800
-        },
-        {
-            "employeeId": 8,
-            "hoursWorked": 160,
-            "leaveDeductions": 0,
-            "finalSalary": 56000
-        },
-        {
-            "employeeId": 9,
-            "hoursWorked": 155,
-            "leaveDeductions": 5,
-            "finalSalary": 61500
-        },
-        {
-            "employeeId": 10,
-            "hoursWorked": 162,
-            "leaveDeductions": 4,
-            "finalSalary": 57750
+  data() {
+    return {
+      payrollData: [], // Initially empty, to be populated with API data
+      selectedEmployee: null, // Selected employee for the payslip
+      loading: false, // To show loading indicator while fetching data
+      errorMessage: '', // To display any error that occurs
+    };
+  },
+  mounted() {
+    this.loadData(); // Call loadData to fetch data when the component is mounted
+  },
+  methods: {
+    // Method to load payroll data
+    async loadData() {
+      this.loading = true;
+      this.errorMessage = ''; // Clear previous errors
+      try {
+        const response = await axios.get('http://localhost/griffith/src/php/get_payroll.php');
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          this.payrollData = response.data; // Populate payroll data
+        } else {
+          this.errorMessage = 'No payroll data available.';
         }
-    ],
-        selectedEmployee: null
-};
+      } catch (error) {
+        console.error('Error fetching payroll data:', error);
+        this.errorMessage = 'Failed to load payroll data.';
+      } finally {
+        this.loading = false;
+      }
     },
-    methods: {
-        // when button is clicked it generates a payslip for selected employee
-        generatePayslip(employee) {
-            this.selectedEmployee = employee;
-        },
-        // close payslip modal
-        closePayslip() {
-            this.selectedEmployee = null;
-        },
-        // Downloaded payslip as PDF
-        downloadPayslip(){
-            const doc = new jsPDF();
-            const {employeeId, hoursWorked, leaveDeductions, finalSalary} = this.selectedEmployee;
-            // Set font and font size
-            doc.setFont("helvetica");
-            doc.setFontSize(16);
-            // Title (Payslip)
-            doc.setTextColor(40, 40, 255);
-            doc.text("Payslip", 105, 20, null, null, "center");
-            // Add Employee Information
-            doc.setFontSize(12);
-            doc.setTextColor(0,0,0);
-            doc.text(`Employee ID: ${employeeId}`, 20, 40);
-            doc.text(`Hours Worked: ${hoursWorked}`, 20, 50);
-            doc.text(`Leave Deductions: ${leaveDeductions}`, 20, 60);
-            doc.text(`Final Salary: $${finalSalary.toLocaleString()}`, 20, 70);
-            // Draw a line to separate the sections
-            doc.setDrawColor(0, 0, 0);
-            doc.line(10, 75, 200, 75);
-            // Set text color for the final amount
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(14);
-            doc.text(`Total Amount: $${finalSalary.toLocaleString()}`, 30, 95);
-            // Add a footer with page number
-            doc.setFontSize(10);
-            doc.text("Generated by Payroll System", 105, 270, null, null, "center");
-            doc.text(`Page ${doc.internal.getNumberOfPages()}`, 200, 285, { align: "right" });
-            // save PDF
-            doc.save(`payslip_${employeeId}.pdf`);
-        }
+
+    // Generate payslip for selected employee
+    generatePayslip(employee) {
+      this.selectedEmployee = employee;
+    },
+
+    // Close payslip modal
+    closePayslip() {
+      this.selectedEmployee = null;
+    },
+
+    // Download payslip as PDF
+    downloadPayslip() {
+      const doc = new jsPDF();
+      const { employee_id, hours_worked, leave_deductions, final_salary } = this.selectedEmployee;
+
+      // Set font and font size
+      doc.setFont('helvetica');
+      doc.setFontSize(16);
+
+      // Title (Payslip)
+      doc.setTextColor(40, 40, 255);
+      doc.text('Payslip', 105, 20, null, null, 'center');
+
+      // Add Employee Information
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Employee ID: ${employee_id}`, 20, 40);
+      doc.text(`Hours Worked: ${hours_worked}`, 20, 50);
+      doc.text(`Leave Deductions: ${leave_deductions}`, 20, 60);
+      doc.text(`Final Salary: $${final_salary.toLocaleString()}`, 20, 70);
+
+      // Draw a line to separate the sections
+      doc.setDrawColor(0, 0, 0);
+      doc.line(10, 75, 200, 75);
+
+      // Set text color for the final amount
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.text(`Total Amount: $${final_salary.toLocaleString()}`, 30, 95);
+
+      // Add a footer with page number
+      doc.setFontSize(10);
+      doc.text('Generated by Payroll System', 105, 270, null, null, 'center');
+      doc.text(`Page ${doc.internal.getNumberOfPages()}`, 200, 285, { align: 'right' });
+
+      // Save the PDF
+      doc.save(`payslip_${employee_id}.pdf`);
     }
+  }
 };
 </script>
-<style>
-table{
-    width: 100%;
-    margin-bottom: 20px;
-    border-collapse: collapse;
-}
-.payroll-table th, .payroll-table td {
-    padding: 12px;
-    text-align: left;
-    border: 1px solid #ddd
-}
-button {
-    padding: 8px 15px;
-    background-color: cadetblue;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-button:hover {
-    background-color: darkcyan;
-}
-.payslip-modal{
-    margin-top: 20px;
-  padding: 15px;
-  background-color: #F9F9F9;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  width: 300px;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-payslip-modal h2 {
-  text-align: center;
-}
-.payslip-modal p {
-  margin: 10px 0;
-}
-h1 {
-    text-align: center;
-    color: #333
-}
-.payroll-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-}
-.download-btn, .close-btn {
-  padding: 8px 15px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  margin-top: 10px;
-  width: 100%;
-  cursor: pointer;
-}
-.download-btn:hover, .close-btn:hover {
-  background-color: #45A049;
-}
-img, video {
-  max-width: 100%;
-  height: auto;
-}
-.flex-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+
+<style scoped>
+/* Custom styles for the payroll system */
+.container {
+  padding: 20px;
 }
 
-.flex-item {
-  flex: 1 1 100%;
+.card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.card-body {
+  padding: 15px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-dialog {
+  max-width: 100%;
   margin: 10px;
 }
 
-@media (min-width: 768px) {
-  .flex-item {
-    flex: 1 1 48%;
-  }
-}
-
-@media (min-width: 992px) {
-  .flex-item {
-    flex: 1 1 31%;
-  }
-}
-/* Base styles for all devices */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-.container {
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
   width: 100%;
-  padding: 20px;
-  box-sizing: border-box;
+  max-width: 500px;
 }
 
-.header, .footer {
-  background-color: #343a40;
-  color: white;
-  text-align: center;
-  padding: 10px 0;
+.modal-body {
+  overflow-y: auto;
+  max-height: 70vh;
 }
 
-.content {
-  padding: 20px;
+h2 {
+  color: #333;
 }
-
-/* Styles for tablets and larger screens */
-@media (min-width: 768px) {
-  .container {
-    max-width: 750px;
-    margin: 0 auto;
-  }
-}
-
-/* Styles for laptops and larger screens */
-@media (min-width: 992px) {
-  .container {
-    max-width: 970px;
-  }
-}
-
-/* Styles for desktops and larger screens */
-@media (min-width: 1200px) {
-  .container {
-    max-width: 1170px;
-  }
-}
-
 </style>

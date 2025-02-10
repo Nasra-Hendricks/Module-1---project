@@ -4,6 +4,7 @@ import AttendanceView from '@/views/AttendanceView.vue'
 import LoginView from '../views/LoginView.vue'
 import PayRollView from '@/views/PayRollView.vue'
 import EmployeeListView from '@/views/EmployeeListView.vue'
+import store from '../store'
 
 
 const routes = [
@@ -41,4 +42,12 @@ const router = createRouter({
   routes
 })
 
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = store.getters.isAuthenticated;
+  if (to.matched.some(record => record.meta.requiresAuth) && !isAuthenticated) {
+    next('/Login');
+  } else {
+    next();
+  }
+})
 export default router
