@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 
 include 'database.php';
 
-// SQL to get attendance and leave requests data
+// SQL to get attendance, leave requests, and employee details
 $sql_attendance_leave = "
     SELECT 
         attendance.employee_id, 
@@ -15,9 +15,11 @@ $sql_attendance_leave = "
         attendance.status AS attendance_status,
         leave_requests.date AS leave_date, 
         leave_requests.reason AS leave_reason, 
-        leave_requests.status AS leave_status
+        leave_requests.status AS leave_status,
+        employees.name AS employee_name
     FROM attendance
     LEFT JOIN leave_requests ON attendance.employee_id = leave_requests.employee_id
+    LEFT JOIN employees ON attendance.employee_id = employees.employee_id
 ";
 
 // Connect to the database
@@ -28,6 +30,7 @@ if ($result_attendance_leave->num_rows > 0) {
     while ($row = $result_attendance_leave->fetch_assoc()) {
         $attendance_leave_data[] = [
             'employee_id' => $row['employee_id'],
+            'employee_name' => $row['employee_name'],  // Add employee name to the response
             'attendance' => [
                 'attendance_date' => $row['attendance_date'],
                 'attendance_status' => $row['attendance_status']
@@ -46,4 +49,5 @@ if ($result_attendance_leave->num_rows > 0) {
 }
 
 $conn->close();
+
 ?>

@@ -3,31 +3,39 @@
     <h2 class="text-center mb-4">Attendance And Leave Records</h2>
     <div v-if="isLoading" class="text-center">Loading...</div>
     <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
-    <div class="row">
-      <div v-for="event in events" :key="event.id" class="col-12 col-md-6 col-lg-4 mb-4">
+
+    <!-- Display one card per employee -->
+    <div class="row d-flex flex-wrap justify-content-between">
+      <div v-for="employee in employees" :key="employee.id" class="col-12 col-md-6 col-lg-4 mb-4">
         <div class="card">
           <div class="card-header">
-            <h5>{{ event.title }}</h5>
+            <h5>{{ employee.name }} (ID: {{ employee.id }})</h5>
           </div>
           <div class="card-body">
-            <p><strong>Date:</strong> {{ event.start }}</p>
-            <p><strong>Status:</strong> {{ event.status }}</p>
-            <div v-if="event.type === 'leaveRequests'">
-              <p><strong>Leave Status:</strong> {{ event.leaveStatus }}</p>
-              <p><strong>Leave Reason:</strong> {{ event.leaveReason }}</p>
-              <div class="d-flex justify-content-between">
-                <button type="button" class="btn btn-success btn-sm" @click="approveLeave(event)">
-                  Approve
-                </button>
-                <button type="button" class="btn btn-danger btn-sm" @click="denyLeave(event)">
-                  Deny
+            <!-- Display all events (attendance and leave) for the current employee -->
+            <div v-for="event in employee.events" :key="event.id">
+              <div v-if="event.type === 'attendance'">
+                <p><strong>Date:</strong> {{ event.start }}</p>
+                <p><strong>Status:</strong> {{ event.status }}</p>
+                <button type="button" class="btn btn-primary btn-sm mt-2" @click="editEvent(event)">
+                  Edit Record
                 </button>
               </div>
-            </div>
-            <div v-if="event.type === 'attendance'">
-              <button type="button" class="btn btn-primary btn-sm mt-2" @click="editEvent(event)">
-                Edit Record
-              </button>
+
+              <!-- Display Leave Requests -->
+              <div v-if="event.type === 'leaveRequests'">
+                <p><strong>Leave Date:</strong> {{ event.start }}</p>
+                <p><strong>Leave Status:</strong> {{ event.leaveStatus }}</p>
+                <p><strong>Leave Reason:</strong> {{ event.leaveReason }}</p>
+                <div class="d-flex justify-content-between">
+                  <button type="button" class="btn btn-success btn-sm" @click="approveLeave(event)">
+                    Approve
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" @click="denyLeave(event)">
+                    Deny
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -44,27 +52,44 @@
           </div>
           <div class="modal-body">
             <form @submit.prevent="updateRecord">
-              <div class="form-group">
-                <label for="date">Date:</label>
-                <input type="date" class="form-control" v-model="editForm.date" required />
+              <!-- Attendance Section -->
+              <div v-if="editType === 'attendance'" class="form-section">
+                <h6 class="section-title">Attendance Details</h6>
+                <div class="form-group">
+                  <label for="date">Date:</label>
+                  <input type="date" class="form-control" v-model="editForm.date" required />
+                </div>
+                <div class="form-group">
+                  <label for="status">Status:</label>
+                  <input type="text" class="form-control" v-model="editForm.status" required />
+                </div>
               </div>
-              <div class="form-group">
-                <label for="status">Status:</label>
-                <input type="text" class="form-control" v-model="editForm.status" required />
+
+              <!-- Leave Request Section -->
+              <div v-if="editType === 'leaveRequests'" class="form-section">
+                <h6 class="section-title">Leave Request Details</h6>
+                <div class="form-group">
+                  <label for="leaveStatus">Leave Status:</label>
+                  <input type="text" class="form-control" v-model="editForm.leaveStatus" />
+                </div>
+                <div class="form-group">
+                  <label for="leaveReason">Leave Reason:</label>
+                  <input type="text" class="form-control" v-model="editForm.leaveReason" />
+                </div>
+                <div class="form-group action-buttons">
+                  <button type="button" class="btn btn-success mr-2" @click="approveLeave">
+                    Approve
+                  </button>
+                  <button type="button" class="btn btn-danger" @click="denyLeave">
+                    Deny
+                  </button>
+                </div>
               </div>
-              <div v-if="editType === 'leaveRequests'" class="form-group">
-                <label for="leaveStatus">Leave Status:</label>
-                <input type="text" class="form-control" v-model="editForm.leaveStatus" />
+
+              <!-- Save Button -->
+              <div class="form-group text-center mt-3">
+                <button type="submit" class="btn btn-primary">Save</button>
               </div>
-              <div v-if="editType === 'leaveRequests'" class="form-group">
-                <label for="leaveReason">Leave Reason:</label>
-                <input type="text" class="form-control" v-model="editForm.leaveReason" />
-              </div>
-              <div v-if="editType === 'leaveRequests'" class="form-group">
-                <button type="button" class="btn btn-success mr-2" @click="approveLeave">Approve</button>
-                <button type="button" class="btn btn-danger" @click="denyLeave">Deny</button>
-              </div>
-              <button type="submit" class="btn btn-primary">Save</button>
             </form>
           </div>
         </div>
@@ -73,16 +98,18 @@
   </div>
 </template>
 
-<script>
-import 'vue-cal/dist/vuecal.css'
 
+
+
+
+<script>
 export default {
   data() {
     return {
-      events: [],
-      showModal: false,
+      employees: [],
       isLoading: true,
       errorMessage: '',
+      showModal: false,
       editForm: {
         date: '',
         status: '',
@@ -171,53 +198,53 @@ export default {
         });
     },
     loadData() {
-  this.isLoading = true;
-  this.errorMessage = "";
-  fetch("http://localhost/griffith/src/php/get_attendance.php")
-    .then((response) => response.json())
-    .then((data) => {
-      if (Array.isArray(data)) {
-        this.events = data.flatMap((employee, index) => {
-          return [
-            // Flatten attendance records
-            ...(employee.attendance ? [{
-              id: `attendance-${employee.employee_id}-${index}`,
-              start: employee.attendance.attendance_date,
-              title: `Attendance - ${employee.attendance.attendance_status}`,
-              type: "attendance",
-              status: employee.attendance.attendance_status,
-              employee_id: employee.employee_id,
-            }] : []),
-            // Flatten leave request records
-            ...(employee.leave_requests ? [{
-              id: `leave-${employee.employee_id}-${index}`,
-              start: employee.leave_requests.leave_date,
-              title: `Leave - ${employee.leave_requests.leave_reason} (${employee.leave_requests.leave_status})`,
-              type: "leaveRequests",
-              leaveStatus: employee.leave_requests.leave_status,
-              leaveReason: employee.leave_requests.leave_reason,
-              employee_id: employee.employee_id,
-            }] : []),
-          ];
+      this.isLoading = true;
+      this.errorMessage = "";
+      fetch("http://localhost/griffith/src/php/get_attendance.php")
+        .then((response) => response.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            this.employees = data.map((employee) => {
+              return {
+                id: employee.employee_id,
+                name: employee.employee_name,
+                events: [
+                  ...(employee.attendance ? [{
+                    id: `attendance-${employee.employee_id}`,
+                    start: employee.attendance.attendance_date,
+                    type: 'attendance',
+                    status: employee.attendance.attendance_status,
+                  }] : []),
+                  ...(employee.leave_requests ? [{
+                    id: `leave-${employee.employee_id}`,
+                    start: employee.leave_requests.leave_date,
+                    type: 'leaveRequests',
+                    leaveStatus: employee.leave_requests.leave_status,
+                    leaveReason: employee.leave_requests.leave_reason,
+                  }] : []),
+                ]
+              };
+            });
+          } else {
+            this.errorMessage = "No attendance or leave data available";
+            console.error("Data format issue: Expected an array");
+          }
+          this.isLoading = false;
+        })
+        .catch((error) => {
+          this.isLoading = false;
+          this.errorMessage = "Error loading data: " + error;
         });
-      } else {
-        this.errorMessage = "No attendance or leave data available";
-        console.error("Data format issue: Expected an array");
-      }
-      this.isLoading = false;
-    })
-    .catch((error) => {
-      this.isLoading = false;
-      this.errorMessage = "Error loading data: " + error;
-    });
-},
+    }
   },
   mounted() {
     // Load data when the component is mounted
     this.loadData();
-  },
+  }
 };
 </script>
+
+
 
 <style scoped>
 /* Custom styles for card, buttons, and modal */
@@ -280,4 +307,28 @@ button {
   padding: 20px;
   box-sizing: border-box;
 }
+
+/* Flexbox layout for cards to display side by side */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.col-12 {
+  flex: 0 0 100%;
+}
+
+.col-md-6 {
+  flex: 0 0 48%; /* Adjusts the width for medium screens */
+}
+
+.col-lg-4 {
+  flex: 0 0 32%; /* Adjusts the width for large screens */
+}
+
+.card {
+  margin-bottom: 20px;
+}
 </style>
+

@@ -13,7 +13,8 @@
       <div v-for="employee in payrollData" :key="employee.employee_id" class="col-12 col-md-6 col-lg-4 mb-4">
         <div class="card">
           <div class="card-header">
-            <h5>Employee ID: {{ employee.employee_id }}</h5>
+            <h5>{{ employee.employee_name }} </h5>
+            (Employee ID: {{ employee.employee_id }})
           </div>
           <div class="card-body">
             <p><strong>Hours Worked:</strong> {{ employee.hours_worked }}</p>
@@ -32,7 +33,8 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Payslip for Employee {{ selectedEmployee.employee_id }}</h5>
+            <h5 class="modal-title">Payslip for {{ selectedEmployee.employee_name }} </h5>
+            (Employee ID: {{ selectedEmployee.employee_id }})
             <button type="button" class="close" @click="closePayslip">&times;</button>
           </div>
           <div class="modal-body">
@@ -97,7 +99,7 @@ export default {
     // Download payslip as PDF
     downloadPayslip() {
       const doc = new jsPDF();
-      const { employee_id, hours_worked, leave_deductions, final_salary } = this.selectedEmployee;
+      const { employee_id, employee_name, hours_worked, leave_deductions, final_salary } = this.selectedEmployee;
 
       // Set font and font size
       doc.setFont('helvetica');
@@ -110,19 +112,20 @@ export default {
       // Add Employee Information
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Employee ID: ${employee_id}`, 20, 40);
-      doc.text(`Hours Worked: ${hours_worked}`, 20, 50);
-      doc.text(`Leave Deductions: ${leave_deductions}`, 20, 60);
-      doc.text(`Final Salary: $${final_salary.toLocaleString()}`, 20, 70);
+      doc.text(`Employee Name: ${employee_name}`, 20, 40);
+      doc.text(`Employee ID: ${employee_id}`, 20, 50);
+      doc.text(`Hours Worked: ${hours_worked}`, 20, 60);
+      doc.text(`Leave Deductions: ${leave_deductions}`, 20, 70);
+      doc.text(`Final Salary: $${final_salary.toLocaleString()}`, 20, 80);
 
       // Draw a line to separate the sections
       doc.setDrawColor(0, 0, 0);
-      doc.line(10, 75, 200, 75);
+      doc.line(10, 85, 200, 85);
 
       // Set text color for the final amount
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
-      doc.text(`Total Amount: $${final_salary.toLocaleString()}`, 30, 95);
+      doc.text(`Total Amount: $${final_salary.toLocaleString()}`, 30, 105);
 
       // Add a footer with page number
       doc.setFontSize(10);
