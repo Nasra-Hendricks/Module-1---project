@@ -130,73 +130,93 @@ export default {
     closeModal() {
       this.showModal = false;
     },
+
     updateRecord() {
-      // Update record via API
-      fetch(`http://localhost/api/attendance.php?id=${this.editEventId}`, {
-        method: 'PUT',
+      fetch(`http://localhost/griffith/src/php/update_data.php`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(this.editForm),
+        body: JSON.stringify({
+          id: this.editEventId,
+          date: this.editForm.date,
+          status: this.editForm.status
+        }),
       })
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            this.loadData(); // Refresh data after updating
+            this.loadData();
             this.closeModal();
           } else {
-            this.errorMessage = 'Failed to update record.';
+            this.errorMessage = data.message || "Failed to update record.";
           }
         })
         .catch((error) => {
-          this.errorMessage = 'Error updating record: ' + error;
+          this.errorMessage = "Error updating record: " + error;
         });
     },
+
     approveLeave(event) {
-      // Send request to approve leave
-      event.leaveStatus = 'Approved';
-      fetch(`http://localhost/api/attendance.php?id=${event.id}`, {
-        method: 'PUT',
+      if (!event.id) {
+        console.error("Missing employee_id");
+        this.errorMessage = "Cannot approve leave: Missing employee_id.";
+        return;
+      }
+
+      fetch(`http://localhost/griffith/src/php/approve_leave.php`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ leaveStatus: 'Approved' }),
+        body: JSON.stringify({ employee_id: event.id }), // Send correct data
       })
-        .then((response) => response.json())
-        .then((data) => {
+        .then(response => response.json())
+        .then(data => {
           if (data.success) {
-            this.loadData(); // Refresh data after approval
+            console.log("Leave approved for employee:", event.id);
+            this.loadData();
           } else {
-            this.errorMessage = 'Failed to approve leave.';
+            console.error("Error approving leave:", data.message);
+            this.errorMessage = 'Failed to approve leave: ' + data.message;
           }
         })
-        .catch((error) => {
+        .catch(error => {
+          console.error("Network or server error:", error);
           this.errorMessage = 'Error approving leave: ' + error;
         });
     },
 
     denyLeave(event) {
-      // Send request to deny leave
-      event.leaveStatus = 'Denied';
-      fetch(`http://localhost/api/attendance.php?id=${event.id}`, {
-        method: 'PUT',
+      if (!event.id) {
+        console.error("Missing employee_id");
+        this.errorMessage = "Cannot deny leave: Missing employee_id.";
+        return;
+      }
+
+      fetch(`http://localhost/griffith/src/php/deny_leave.php`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ leaveStatus: 'Denied' }),
+        body: JSON.stringify({ employee_id: event.id }), // Send correct data
       })
-        .then((response) => response.json())
-        .then((data) => {
+        .then(response => response.json())
+        .then(data => {
           if (data.success) {
-            this.loadData(); // Refresh data after denial
+            console.log("Leave denied for employee:", event.id);
+            this.loadData();
           } else {
-            this.errorMessage = 'Failed to deny leave.';
+            console.error("Error denying leave:", data.message);
+            this.errorMessage = 'Failed to deny leave: ' + data.message;
           }
         })
-        .catch((error) => {
+        .catch(error => {
+          console.error("Network or server error:", error);
           this.errorMessage = 'Error denying leave: ' + error;
         });
     },
+
     loadData() {
       this.isLoading = true;
       this.errorMessage = "";
@@ -216,7 +236,7 @@ export default {
                     status: employee.attendance.attendance_status,
                   }] : []),
                   ...(employee.leave_requests ? [{
-                    id: `leave-${employee.employee_id}`,
+                    id: employee.employee_id, // Ensure correct ID
                     start: employee.leave_requests.leave_date,
                     type: 'leaveRequests',
                     leaveStatus: employee.leave_requests.leave_status,
@@ -238,11 +258,12 @@ export default {
     }
   },
   mounted() {
-    // Load data when the component is mounted
     this.loadData();
   }
 };
 </script>
+
+
 
 
 
@@ -320,15 +341,16 @@ button {
 }
 
 .col-md-6 {
-  flex: 0 0 48%; /* Adjusts the width for medium screens */
+  flex: 0 0 48%;
+  /* Adjusts the width for medium screens */
 }
 
 .col-lg-4 {
-  flex: 0 0 32%; /* Adjusts the width for large screens */
+  flex: 0 0 32%;
+  /* Adjusts the width for large screens */
 }
 
 .card {
   margin-bottom: 20px;
 }
 </style>
-

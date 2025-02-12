@@ -7,6 +7,12 @@ import EmployeeListView from '@/views/EmployeeListView.vue';
 const routes = [
   {
     path: '/',
+    name: 'Loginview',
+    component: LoginView,
+    meta: { requiresAuth: true } // Protect this route
+  },
+  {
+    path: '/home',
     name: 'home',
     component: HomeView,
     meta: { requiresAuth: true } // Protect this route

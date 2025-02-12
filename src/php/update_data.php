@@ -1,42 +1,31 @@
 <?php
-// import database
-    include "database.php";
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST"); 
+header("Content-Type: application/json");
 
-    if($_SERVER["REQUEST_METHOD"] == "POST"){
-        $name = $_POST['name'];
-        $new_department = $_POST['status'];
+include 'db_connection.php';
 
-        // update new department
-    //     $sql = "UPDATE employees SET department = '$new_department' WHERE name = '$name'"
-        
-    //     if($conn->query($sql) == TRUE){
-    //         echo "'$name' has moved to the '$new_department' department";
-    //     }else{
-    //         echo "Error updating: " . $conn->error;
-    //     }
-    }
+$data = json_decode(file_get_contents("php://input"));
 
-    // // update attendance
-    // $sql = "UPDATE attendance SET present = '1' WHERE employee_id = '$id'";
+if (!isset($data->id) || !isset($data->date) || !isset($data->status)) {
+    echo json_encode(["success" => false, "message" => "Missing required fields"]);
+    exit;
+}
 
-    // // update leave Request
-    // $sql = "UPDATE leave_Requests SET status = '1' WHERE employee_id = '$id'";
+$id = $data->id;
+$date = $data->date;
+$status = $data->status;
 
-    // Create a function that updates attendance
-    function updateAttendance($id){
-        global $conn;
-        $sql = "UPDATE attendance SET present = '1' WHERE employee_id = '$id'";
-        $conn->query($sql);
-    }
-    updateAttendance($id);
+$sql = "UPDATE attendance SET attendance_date = ?, attendance_status = ? WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("ssi", $date, $status, $id);
 
-    // Create a function that updates leave request
-    function updateLeaveRequest($id){
-        global $conn;
-        $sql = "UPDATE leave_Requests SET status = '1' WHERE employee_id = '$id'";
-        $conn->query($sql);
-    }
-    updateLeaveRequest($id);
+if ($stmt->execute()) {
+    echo json_encode(["success" => true, "message" => "Record updated successfully"]);
+} else {
+    echo json_encode(["success" => false, "message" => "Failed to update record"]);
+}
 
-
-    $conn->close();
+$stmt->close();
+$conn->close();
+?>

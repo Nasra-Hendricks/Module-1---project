@@ -3,18 +3,18 @@
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-brand">
-          <!-- Optional: Add your brand name here -->
           <a href="/">ModernTech Solutions</a>
         </div>
         <button class="navbar-toggle" @click="toggleMenu">
           &#9776;
         </button>
         <div :class="['navbar-links', { 'navbar-open': isMenuOpen }]">
-          <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/home" class="nav-link">Home</router-link>
           <router-link to="/EmployeeListView" class="nav-link">Employee List</router-link>
           <router-link to="/AttendanceView" class="nav-link">Attendance</router-link>
           <router-link to="/PayRollView" class="nav-link">Payroll</router-link>
-          <router-link to="/LoginView" class="nav-link">Login</router-link>
+          <router-link v-if="!isLoggedIn" to="/LoginView" class="nav-link">Login</router-link>
+          <button v-if="isLoggedIn" @click="logout" class="logout-button">Logout</button>
         </div>
       </div>
     </nav>
@@ -26,15 +26,32 @@ export default {
   name: 'App',
   data() {
     return {
-      isMenuOpen: false
+      isMenuOpen: false,
+      isLoggedIn: !!sessionStorage.getItem("user_id") // Track login state
     };
   },
   methods: {
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
+    },
+    async logout() {
+      try {
+        const response = await fetch("http://localhost/your_project_folder/logout.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const result = await response.json();
+        if (result.success) {
+          sessionStorage.removeItem("user_id");
+          this.isLoggedIn = false;
+          this.$router.push("/LoginView"); // Redirect to login
+        }
+      } catch (error) {
+        console.error("Logout failed", error);
+      }
     }
   }
-}
+};
 </script>
 <style>
 #app {
@@ -49,7 +66,7 @@ export default {
   color: white;
   padding: 10px 20px;
   display: flex;
-  justify-content: space-between; /* Changed from center to space-between for better layout */
+  justify-content: space-between;
   align-items: center;
   position: relative;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -83,6 +100,18 @@ export default {
 .nav-link:hover {
   color: #1D5ACC;
 }
+.logout-button {
+  background: red;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 5px;
+}
+.logout-button:hover {
+  background: darkred;
+}
 .navbar-toggle {
   display: none;
   font-size: 2rem;
@@ -108,13 +137,11 @@ export default {
   .navbar-toggle {
     display: block;
   }
-  /* Adjust the navbar items when the menu is open */
   .navbar-links .nav-link {
     padding: 10px;
     text-align: center;
   }
 }
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -124,3 +151,22 @@ export default {
   }
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

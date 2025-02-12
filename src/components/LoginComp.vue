@@ -30,6 +30,7 @@ export default {
     };
   },
   methods: {
+
     async handleLogin() {
       try {
         const response = await fetch('http://localhost/griffith/src/php/login.php', {
@@ -58,6 +59,17 @@ export default {
 form {
   display:block !important;
 }
+
+/* display layout in the middel of page */
+
+body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
 /* :fire: Background and Layout */
 .login-container {
   display: flex;
@@ -144,6 +156,8 @@ input:focus {
   border-radius: 50%;
   opacity: 0.5;
   animation: float 6s infinite ease-in-out;
+  display: flex;
+  
 }
 .shape1 {
   top: 10%;

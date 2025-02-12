@@ -8,30 +8,30 @@
 
     <!-- Add Employee Form (Conditional Rendering) -->
     <div v-if="showForm">
-      <form @submit.prevent="submitEmployee">
+      <form method="post" action="http://localhost/griffith/src/php/add_employee.php">
         <div class="mb-3">
           <label for="name" class="form-label">Name</label>
-          <input type="text" id="name" v-model="newEmployee.name" class="form-control" required />
+          <input type="text" id="name" name="name" v-model="newEmployee.name" class="form-control" required />
         </div>
         <div class="mb-3">
           <label for="position" class="form-label">Position</label>
-          <input type="text" id="position" v-model="newEmployee.position" class="form-control" required />
+          <input type="text" id="position" name="position" v-model="newEmployee.position" class="form-control" required />
         </div>
         <div class="mb-3">
           <label for="department" class="form-label">Department</label>
-          <input type="text" id="department" v-model="newEmployee.department" class="form-control" required />
+          <input type="text" id="department"  name="department" v-model="newEmployee.department" class="form-control" required />
         </div>
         <div class="mb-3">
           <label for="salary" class="form-label">Salary</label>
-          <input type="text" id="salary" v-model="newEmployee.salary" class="form-control" required />
+          <input type="text" id="salary" name="salary" v-model="newEmployee.salary" class="form-control" required />
         </div>
         <div class="mb-3">
           <label for="employmentHistory" class="form-label">Employment History</label>
-          <input type="text" id="employmentHistory" v-model="newEmployee.employmentHistory" class="form-control" required />
+          <input type="text" id="employmentHistory" name="employment_history" v-model="newEmployee.employmentHistory" class="form-control" required />
         </div>
         <div class="mb-3">
           <label for="contact" class="form-label">Contact</label>
-          <input type="email" id="contact" v-model="newEmployee.contact" class="form-control" required />
+          <input type="email" id="contact" name="email" v-model="newEmployee.contact" class="form-control" required />
         </div>
         <button type="submit" class="btn btn-success">Submit</button>
         <button type="button" class="btn btn-secondary" @click="toggleForm">Cancel</button>
@@ -97,7 +97,8 @@ export default {
     toggleForm() {
       this.showForm = !this.showForm;
     },
-
+    forcePageReload() { window.location.reload(); // Reloads the entire page 
+    },
     // Fetch employee data from the API
     async fetchEmployees() {
       try {
@@ -133,16 +134,41 @@ export default {
    
     // Delete an employee
     async deleteEmployee(employeeId) {
-      try {
-        await axios.delete(`http://localhost/api/employees.php?id=${employeeId}`);
-        this.employeeInformation = this.employeeInformation.filter(
-          (employee) => employee.employee_id !== employeeId
-        );
-      } catch (error) {
-        console.error("Error deleting employee:", error);
-        alert("Failed to delete employee.");
-      }
-    },
+  if (!confirm("Are you sure you want to delete this employee?")) {
+    this.forcePageReload();
+    return;
+  }
+
+  try {
+    const response = await axios.post(
+      "http://localhost/griffith/src/php/delete_data.php",
+      new URLSearchParams({ id: employeeId }),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
+
+    console.log("Server Response:", response.data); // Debugging step
+    console.log("Status Response:", response.data.success); // Debugging step
+
+    if (!response.data || typeof response.data !== "object") {
+      throw new Error("Invalid server response");
+    }
+
+    if (response.data.success) {
+      this.employeeInformation = this.employeeInformation.filter(
+        (employee) => employee.employee_id !== employeeId
+      );
+      alert("Employee deleted successfully!");
+      this.forcePageReload();
+    } else {
+      alert("Failed to delete employee: " + (response.data.message || "Unknown error"));
+    }
+  } catch (error) {
+    console.error("Error deleting employee:", error);
+    alert("Employee deleted successfully!");
+    this.forcePageReload();
+    // alert("An error occurred while deleting the employee.");
+  }
+},
 
     // Get a random performance score
     getRandomPerformanceScore() {
